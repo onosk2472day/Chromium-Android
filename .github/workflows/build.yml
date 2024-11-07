@@ -11,15 +11,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: List Repository Contents
-      run: |
-        echo "Root directory contents:"
-        ls -la
-        echo "Searching for Gradle files:"
-        find . -name "*.gradle"
-        echo "Searching for gradlew:"
-        find . -name "gradlew"
-
     - name: Set up JDK
       uses: actions/setup-java@v3
       with:
@@ -28,16 +19,34 @@ jobs:
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
+      with:
+        cmdline-tools-version: '8.0'
 
-    - name: Check Gradle Setup
+    - name: Accept Android licenses
       run: |
-        if [ -f "gradlew" ]; then
-          echo "Found gradlew in root"
-          chmod +x gradlew
-          ./gradlew -v
-        elif [ -f "gradle.properties" ]; then
-          echo "Found gradle.properties"
-          cat gradle.properties
-        else
-          echo "No Gradle files found in root"
-        fi
+        yes | sdkmanager --licenses
+        sdkmanager "build-tools;30.0.3" "platforms;android-30"
+
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: Clean project
+      run: ./gradlew clean
+
+    - name: Build debug APK
+      run: ./gradlew :app:assembleDebug --stacktrace
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug
+        path: app/build/outputs/apk/debug/*.apk
+
+    - name: Upload Build Reports
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-reports
+        path: |
+          app/build/reports/
+          */build/reports/
