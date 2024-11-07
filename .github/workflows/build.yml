@@ -1,9 +1,9 @@
 name: Build Android APK
 on:
   push:
-    branches: [ main ]
+    branches: [ "73.0.3683.93" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "73.0.3683.93" ]
 
 jobs:
   build:
