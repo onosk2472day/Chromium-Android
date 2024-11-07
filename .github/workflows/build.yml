@@ -22,22 +22,47 @@ jobs:
       with:
         cmdline-tools-version: '8.0'
 
-    - name: Accept Android licenses
+    - name: Install Android SDK components
       run: |
-        yes | sdkmanager --licenses
-        sdkmanager "build-tools;30.0.3" "platforms;android-30"
+        sdkmanager --install "platforms;android-33" \
+                            "platforms;android-32" \
+                            "platforms;android-31" \
+                            "platforms;android-30" \
+                            "build-tools;33.0.0" \
+                            "build-tools;32.0.0" \
+                            "build-tools;31.0.0" \
+                            "build-tools;30.0.3" \
+                            "extras;android;m2repository" \
+                            "extras;google;m2repository"
 
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
+    - name: Show Gradle version and info
+      run: |
+        ./gradlew -v
+        ./gradlew projects
+
     - name: Clean project
-      run: ./gradlew clean
+      run: ./gradlew clean --info
 
     - name: Build debug APK
-      run: ./gradlew :app:assembleDebug --stacktrace
+      run: |
+        ./gradlew :app:assembleDebug --info --stacktrace --scan \
+        -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxPermSize=2048m -XX:+HeapDumpOnOutOfMemoryError" \
+        -Dorg.gradle.parallel=true \
+        -Dorg.gradle.configureondemand=true \
+        -Dkotlin.compiler.execution.strategy=in-process
+
+    - name: List build outputs
+      if: always()
+      run: |
+        echo "Listing app/build directory:"
+        ls -R app/build || true
 
     - name: Upload APK
       uses: actions/upload-artifact@v3
+      if: success()
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/*.apk
@@ -50,3 +75,4 @@ jobs:
         path: |
           app/build/reports/
           */build/reports/
+          */*/build/reports/
