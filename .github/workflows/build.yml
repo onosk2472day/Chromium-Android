@@ -11,6 +11,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: List Repository Contents
+      run: |
+        echo "Root directory contents:"
+        ls -la
+        echo "Searching for Gradle files:"
+        find . -name "*.gradle"
+        echo "Searching for gradlew:"
+        find . -name "gradlew"
+
     - name: Set up JDK
       uses: actions/setup-java@v3
       with:
@@ -20,37 +29,15 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
 
-    - name: Show directory structure
+    - name: Check Gradle Setup
       run: |
-        ls -la
-        find . -name "gradlew"
-        find . -name "*.gradle"
-
-    - name: Build Debug APK
-      run: |
-        if [ -f "./gradlew" ]; then
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --info
+        if [ -f "gradlew" ]; then
+          echo "Found gradlew in root"
+          chmod +x gradlew
+          ./gradlew -v
+        elif [ -f "gradle.properties" ]; then
+          echo "Found gradle.properties"
+          cat gradle.properties
         else
-          echo "gradlew not found in root directory"
-          if [ -f "./app/gradlew" ]; then
-            chmod +x ./app/gradlew
-            cd app
-            ./gradlew assembleDebug --info
-          else
-            echo "gradlew not found in app directory either"
-            find . -name "gradlew"
-          fi
+          echo "No Gradle files found in root"
         fi
-
-    - name: Find APK
-      run: |
-        find . -name "*.apk"
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
-      if: success()
-      with:
-        name: debug-apk
-        path: |
-          **/*.apk
